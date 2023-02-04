@@ -6,6 +6,7 @@ import fs from 'fs';
 import compression from 'compression';
 import express from 'express';
 import path from 'path';
+import langs from 'langs';
 import { fileURLToPath } from 'url';
 import dotenv from 'dotenv';
 
@@ -28,7 +29,7 @@ const info = {
   material: {}, era: {}, subject: {}, language: {},
 };
 
-const index = {};
+const database = {};
 
 /* eslint-disable-next-line no-restricted-syntax */
 for (const item of data) {
@@ -52,22 +53,28 @@ for (const item of data) {
   const title = item.text.body.bibl.title._text.toString().replace(/[\t\n\s]+/g, ' ').replaceAll(' - ', ' – ').trim();
   if (item.text.body.bibl?.ref?._text) {
     const url = item.text.body.bibl.ref._text.toString();
-    index.url = url;
+    obj.url = url;
   }
   obj.title = title;
   obj.id = id;
 
-  index[id] = obj;
+  database[id] = obj;
 }
 // console.log(info);
+
+const languages = Object.fromEntries(Object.keys(info.language).map((x) => [x, langs.where('1', x)]));
 
 // app.get('/api/size', async (req, res) => {
 //   res.json({ size: data.length });
 // });
 
+app.get('/api/languages', async (req, res) => {
+  res.json(languages);
+});
+
 app.get('/api/projects', async (req, res) => {
   // res.json(data.map((x) => ({ id: x._attributes['xml:id'], title: x.text.body.bibl.title._text.toString().replace(/[\t\n\s]+/g, ' ').replaceAll(' - ', ' – ').trim() })));
-  res.json(index);
+  res.json(database);
 });
 
 app.get('/api/data', async (req, res) => {
