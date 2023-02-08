@@ -2,14 +2,11 @@
 logs
 *.log
 .env
-*.session
 package-lock.json
 node_modules
-.ftpconfig
 /server/media
 /client/dist
 /client/dev-dist
 client/components.d.ts
 client/auto-imports.d.ts
-catalog_TEI.xml
-data.json
+data/
