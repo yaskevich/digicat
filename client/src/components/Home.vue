@@ -2,14 +2,15 @@
   <div class="home">
     <div v-if="isLoaded" style="margin: auto">
       <h4>
-        {{ Object.keys(db.projects).length }} projects. Updated
-        {{ new Date(db.gitlab.last_activity_at).toLocaleDateString() }}
+        {{ Object.keys(db.projects).length }} items. Updated
+        {{ new Date(db.gitlab.last_activity_at).toLocaleDateString() }}. Project by Patrick Sahle et al.
       </h4>
 
       <!-- {{ selection }} -->
       <div class="mb-2">
         <h5>
-          Selected: {{ allKeys.length === matches.length ? allKeys.length : matches.length + ' of ' + allKeys.length }}
+          Selected: {{ allKeys.length === matches.length ? allKeys.length : matches.length + ' of ' + allKeys.length }}.
+          <span v-if="$route.query.search"> Search term «{{ $route.query.search }}» </span>
         </h5>
         <MultiSelect
           v-model="selection"
@@ -86,7 +87,8 @@
 </template>
 
 <script setup lang="ts">
-import { ref, reactive, onBeforeMount, onMounted, onUnmounted } from 'vue';
+import { ref, reactive, onBeforeMount, onMounted, onUnmounted, unref } from 'vue';
+import { useRoute, onBeforeRouteUpdate } from 'vue-router';
 import axios from 'axios';
 import Chip from 'primevue/chip';
 import Card from 'primevue/card';
@@ -105,21 +107,31 @@ const db = catalog as keyable;
 const isLoaded = ref(false);
 const gitData = reactive({});
 const scrollComponent = ref(null);
+const vuerouter = useRoute();
 const matches = ref<Array<string>>([]);
 const limit = ref(10);
 const allKeys = ref<Array<string>>([]);
 
+const term = ref('');
+
 ///////////////////////////////////////////////////////////////////
 // static load
-allKeys.value = Object.keys(db.projects);
-matches.value = allKeys.value;
+allKeys.value = Object.keys(db.projects).reverse();
+// matches.value = allKeys.value;
+
 // static load
 ///////////////////////////////////////////////////////////////////
 
 const updateFacet = () => {
   limit.value = 10;
   matches.value = selection.value?.length ? allKeys.value.filter(x => match(x)).reverse() : allKeys.value;
-  // console.log('search', matches.value.length);
+  
+  if (term.value) {
+    // console.log(term.value, matches.value.length);
+    let pattern = new RegExp(term.value, 'i');
+    matches.value = matches.value.filter(id => pattern.test (db.projects[id].title));
+    // console.log('now', matches.value.length);
+  }
 };
 
 const match = (id: any) => {
@@ -148,8 +160,28 @@ const icons = {
   language: 'pi-language',
 } as keyable;
 
+onBeforeRouteUpdate(async (to, from) => {
+  console.log('update route', from.fullPath, '→', to.fullPath);
+  term.value = to.query.search ? String(to.query.search): '';
+  updateFacet();
+  // if (to?.params?.page) {
+  //   // console.log('-> update params');
+  //   page.value = Number(to.params.page);
+  //   pageSize.value = Number(to.params.batch);
+  // }
+  // if (from?.params?.page) {
+  //   // console.log('-> call update');
+  //   await updatePage();
+  // }
+});
+
 onMounted(() => {
   window.addEventListener('scroll', handleScroll);
+  // console.log('mount Home', vuerouter.query.search);
+  if (vuerouter.query.search) {
+    term.value = String(unref(vuerouter.query.search));
+  }
+  updateFacet();
 });
 
 onUnmounted(() => {

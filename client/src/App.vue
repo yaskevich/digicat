@@ -1,5 +1,24 @@
 <template>
   <div class="container">
+    <div>
+      <Menubar :model="items" class="header">
+        <template #start>
+          <router-link :to="{ name: 'Home' }">
+            <img alt="Project logo" title="Home page" :src="logo" height="40" class="mr-2" style="filter: invert(1)" />
+          </router-link>
+          <!-- <img alt="logo" src="assets/DH-BUW-Logo_Editionenkatalog.png" height="40" class="mr-2" />
+          <img alt="logo" src="assets/GRK-Logo_weiss.png" height="40" class="mr-2" /> -->
+          <!-- <img alt="logo" src="assets/ide.png" height="40" class="mr-2" /> -->
+        </template>
+        <template #end>
+          <div class="p-inputgroup">
+            <Button class="p-button-secondary" icon="pi pi-trash" @click="clearSearch" />
+            <InputText placeholder="Search by title" type="text" v-model="term" @change="search" />
+            <Button icon="pi pi-search" class="p-button-secondary" @click="search" />
+          </div>
+        </template>
+      </Menubar>
+    </div>
     <router-view />
   </div>
 </template>
@@ -10,6 +29,62 @@ import { h, Component, ref, reactive, onBeforeMount, onMounted, computed, watch 
 import axios, { AxiosError, AxiosRequestConfig, AxiosResponse } from 'axios';
 // import store from './store';
 // const vuerouter = useRoute();
+import Menubar from 'primevue/menubar';
+import InputText from 'primevue/inputtext';
+import Button from 'primevue/button';
+const logo = new URL('./assets/BUW_Logo-weiss.png', import.meta.url).href;
+
+const vuerouter = useRoute();
+const term = ref('');
+
+const clearSearch = () => {
+  term.value = '';
+  search();
+};
+
+const search = () => {
+  // console.log('search', term.value);
+  term.value ? router.replace({ path: '/', query: { search: term.value } }) : router.replace({ path: '/' });
+};
+
+onMounted(() => {
+  console.log('mount app');
+
+  if (vuerouter.query.search) {
+    console.log('set', vuerouter.query.search);
+    term.value = String(vuerouter.query.search);
+  }
+});
+
+const items = ref([
+  {
+    label: 'Charts',
+    icon: 'pi pi-fw pi-chart-bar',
+    // items: [
+    //   {
+    //     label: 'Charts',
+    //     icon: 'pi pi-fw pi-align-left',
+    //   },
+    //   {
+    //     label: 'About',
+    //     icon: 'pi pi-fw pi-align-right',
+    //   },
+    // ],
+  },
+  // {
+  //   separator: true,
+  // },
+  // {
+  //   label: 'Item 2',
+  //   disabled: true,
+  // },
+  {
+    label: 'About',
+    icon: 'pi pi-fw pi-info-circle',
+    to: '/about',
+  },
+]);
+
 const activeKey = ref<string | null>(null); // vuerouter?.name||'Home'
 // const loggedIn = computed(() => store?.state?.token?.length);
 // const access = ref(false);
@@ -28,7 +103,7 @@ const activeKey = ref<string | null>(null); // vuerouter?.name||'Home'
   font-family: 'Roboto Condensed', sans-serif !important;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
-  color: #2c3e50;
+  // color: #2c3e50;
 }
 
 //
@@ -99,5 +174,9 @@ const activeKey = ref<string | null>(null); // vuerouter?.name||'Home'
 .container {
   max-width: 900px;
   margin: auto;
+}
+
+:deep(.header) {
+  background-color: #333333;
 }
 </style>
