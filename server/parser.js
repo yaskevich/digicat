@@ -6,20 +6,42 @@ import { fileURLToPath } from 'url';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
-const gitlabUrl = 'https://git.uni-wuppertal.de/api/v4/projects/749';
 
-const response = await fetch(gitlabUrl);
-const gitlab = await response.json();
-// console.log(gitlab);
+let repo;
+let raw;
 
-const xml = fs.readFileSync(path.join(__dirname, 'data', 'catalog_TEI.xml'), 'utf8');
-const result = convert.xml2json(xml, { compact: true, spaces: 2 });
-// console.log(result);
+const bLoad = process.argv.filter((x) => x === '--deploy')?.length;
+const bWrite = process.argv.filter((x) => x === '--write')?.length;
 
-// fs.writeFileSync('./data.json', JSON.stringify(result, null, 2) , 'utf-8');
-fs.writeFileSync(path.join(__dirname, 'data', 'catalog-raw.json'), result, 'utf-8');
-// const dataRaw = JSON.parse(fs.readFileSync(path.join(__dirname, 'data.json'), 'utf8'));
-const dataRaw = JSON.parse(result);
+if (bLoad) {
+  // download JSON of repository info
+  const infoUrl = 'https://git.uni-wuppertal.de/api/v4/projects/749';
+  const infoResp = await fetch(infoUrl);
+  repo = await infoResp.json();
+  if (bWrite) {
+    fs.writeFileSync(path.join(__dirname, 'data', 'catalog-info.json'), JSON.stringify(repo), 'utf-8');
+  }
+
+  // download XML file of the catalog
+  const xmlUrl = 'https://git.uni-wuppertal.de/dhsfu/sde-catalog/-/raw/master/catalog_TEI.xml?inline=false';
+  const xmlResp = await fetch(xmlUrl);
+  const xml = await xmlResp.text();
+  if (bWrite) {
+    fs.writeFileSync(path.join(__dirname, 'data', 'catalog_TEI.xml'), xml, 'utf-8');
+  }
+  // const xml = fs.readFileSync(path.join(__dirname, 'data', 'catalog_TEI.xml'), 'utf8');
+  raw = convert.xml2json(xml, { compact: true, spaces: 2 });
+  if (bWrite) {
+    fs.writeFileSync(path.join(__dirname, 'data', 'catalog-raw.json'), raw, 'utf-8');
+  }
+} else {
+  // or read downloaded files
+  const repoText = fs.readFileSync(path.join(__dirname, 'data', 'catalog-info.json'), 'utf8');
+  repo = JSON.parse(repoText);
+  raw = fs.readFileSync(path.join(__dirname, 'data', 'catalog-raw.json'), 'utf8');
+}
+
+const dataRaw = JSON.parse(raw);
 const data = dataRaw.teiCorpus.TEI;
 
 const facets = {
@@ -65,6 +87,11 @@ const info = {
 
 const projects = {};
 
+const addToFacets = (category, leaf, value) => {
+  /* eslint-disable-next-line no-param-reassign, no-unused-expressions */
+  facets[category]?.[leaf] ? facets[category][leaf].push(value) : facets[category][leaf] = [value];
+};
+
 /* eslint-disable-next-line no-restricted-syntax */
 for (const item of data) {
   const id = item._attributes['xml:id'];
@@ -76,12 +103,13 @@ for (const item of data) {
       const vals = unit._attributes?.ana.split(' ');
       obj[type] = vals;
       for (const val of vals) {
-        facets[type]?.[val] ? facets[type][val].push(id) : facets[type][val] = [id];
+        addToFacets(type, val, id);
       }
     } else if (['material',].includes(type)) {
+      // Collected works may contain other material like papers or letters. Single manuscripts may also be multi volume manuscripts or series of manuscripts. Find some more information behind the info buttons on the web page.
       const val = unit._attributes?.ana;
-      facets[type]?.[val] ? facets[type][val].push(id) : facets[type][val] = [id];
-      obj[type] = val;
+      addToFacets(type, val, id);
+      obj[type]?.length ? obj[type].push(val) : obj[type] = [val];
     }
   }
   const title = item.text.body.bibl.title._text.toString().replace(/[\t\n\s]+/g, ' ').replaceAll(' - ', ' – ').trim();
@@ -132,5 +160,5 @@ const choices = Object.keys(facets).map((x) => ({
 }));
 
 fs.writeFileSync(path.join(__dirname, 'data', 'catalog.json'), JSON.stringify({
-  gitlab, languages, projects, facets, choices, info,
+  gitlab: repo, languages, projects, facets, choices, info,
 }, null, 2), 'utf-8');
