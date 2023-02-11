@@ -13,13 +13,16 @@ let raw;
 const bLoad = process.argv.filter((x) => x === '--deploy')?.length;
 const bWrite = process.argv.filter((x) => x === '--write')?.length;
 
+const dataPath = path.join(__dirname, 'data');
+fs.mkdirSync(dataPath, { recursive: true });
+
 if (bLoad) {
   // download JSON of repository info
   const infoUrl = 'https://git.uni-wuppertal.de/api/v4/projects/749';
   const infoResp = await fetch(infoUrl);
   repo = await infoResp.json();
   if (bWrite) {
-    fs.writeFileSync(path.join(__dirname, 'data', 'catalog-info.json'), JSON.stringify(repo), 'utf-8');
+    fs.writeFileSync(path.join(dataPath, 'catalog-info.json'), JSON.stringify(repo), 'utf-8');
   }
 
   // download XML file of the catalog
@@ -27,18 +30,18 @@ if (bLoad) {
   const xmlResp = await fetch(xmlUrl);
   const xml = await xmlResp.text();
   if (bWrite) {
-    fs.writeFileSync(path.join(__dirname, 'data', 'catalog_TEI.xml'), xml, 'utf-8');
+    fs.writeFileSync(path.join(dataPath, 'catalog_TEI.xml'), xml, 'utf-8');
   }
   // const xml = fs.readFileSync(path.join(__dirname, 'data', 'catalog_TEI.xml'), 'utf8');
   raw = convert.xml2json(xml, { compact: true, spaces: 2 });
   if (bWrite) {
-    fs.writeFileSync(path.join(__dirname, 'data', 'catalog-raw.json'), raw, 'utf-8');
+    fs.writeFileSync(path.join(dataPath, 'catalog-raw.json'), raw, 'utf-8');
   }
 } else {
   // or read downloaded files
-  const repoText = fs.readFileSync(path.join(__dirname, 'data', 'catalog-info.json'), 'utf8');
+  const repoText = fs.readFileSync(path.join(dataPath, 'catalog-info.json'), 'utf8');
   repo = JSON.parse(repoText);
-  raw = fs.readFileSync(path.join(__dirname, 'data', 'catalog-raw.json'), 'utf8');
+  raw = fs.readFileSync(path.join(dataPath, 'catalog-raw.json'), 'utf8');
 }
 
 const dataRaw = JSON.parse(raw);
@@ -159,6 +162,6 @@ const choices = Object.keys(facets).map((x) => ({
   })),
 }));
 
-fs.writeFileSync(path.join(__dirname, 'data', 'catalog.json'), JSON.stringify({
+fs.writeFileSync(path.join(dataPath, 'catalog.json'), JSON.stringify({
   gitlab: repo, languages, projects, facets, choices, info,
 }, null, 2), 'utf-8');
