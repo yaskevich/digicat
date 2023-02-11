@@ -11,7 +11,7 @@
           <!-- <img alt="logo" src="assets/ide.png" height="40" class="mr-2" /> -->
         </template>
         <template #end>
-          <div class="p-inputgroup">
+          <div class="p-inputgroup" v-show="$route.path === '/'">
             <Button class="p-button-secondary" icon="pi pi-trash" @click="clearSearch" />
             <InputText placeholder="Search by title" type="text" v-model="term" @change="search" />
             <Button icon="pi pi-search" class="p-button-secondary" @click="search" />

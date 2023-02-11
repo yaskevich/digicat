@@ -16,25 +16,9 @@ const routes: Array<RouteRecordRaw> = [
   },
 ];
 
-const scrollBehavior: RouterScrollBehavior = async (to: any, from: any, savedPosition: any) => {
-  console.log('savedPosition', savedPosition);
-
-  return new Promise((resolve, reject) => {
-    setTimeout(() => {
-      if (savedPosition) {
-        console.log('restore scroll position');
-        resolve(savedPosition);
-      } else {
-        resolve({ top: 0 });
-      }
-    }, 1500);
-  });
-};
-
 const router = createRouter({
   history: createWebHistory(),
   routes,
-  scrollBehavior,
 });
 
 export default router;

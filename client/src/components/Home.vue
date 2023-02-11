@@ -1,17 +1,19 @@
 <template>
   <div class="home">
     <div v-if="isLoaded" style="margin: auto">
-      <h4>
-        {{ Object.keys(db.projects).length }} items. Updated
-        {{ new Date(db.gitlab.last_activity_at).toLocaleDateString() }}. Project by Patrick Sahle et al.
-      </h4>
+      <div class="ml-4">
+        <h4>
+          {{ Object.keys(db.projects).length }} items. Updated
+          {{ new Date(db.gitlab.last_activity_at).toLocaleDateString() }}. Project by Patrick Sahle et al.
+        </h4>
+        <h4>
+          Selected: {{ allKeys.length === matches.length ? allKeys.length : matches.length + ' of ' + allKeys.length }}.
+          <span v-if="$route.query.search"> Search term «{{ $route.query.search }}» </span>
+        </h4>
+      </div>
 
       <!-- {{ selection }} -->
       <div class="mb-2">
-        <h5>
-          Selected: {{ allKeys.length === matches.length ? allKeys.length : matches.length + ' of ' + allKeys.length }}.
-          <span v-if="$route.query.search"> Search term «{{ $route.query.search }}» </span>
-        </h5>
         <MultiSelect
           v-model="selection"
           @change="updateFacet"
@@ -57,22 +59,26 @@
 
           <template #footer>
             <div class="flex md:justify-content-start flex-wrap">
-              <div class="flex align-items-start">
-                <Chip :label="db.info.material[db.projects[item].material][0]" class="material mr-2" />
+              <div class="flex align-items-start mt-1">
+                <Chip
+                  v-for="mat in db.projects[item].material"
+                  :label="db.info.material[mat][0]"
+                  class="material mr-1" />
+                <!-- <Chip :label="db.info.material[db.projects[item].material][0]" class="material mr-2" /> -->
               </div>
-              <div class="flex align-items-start">
+              <div class="flex align-items-start mt-1">
                 <Chip
                   v-for="lang in db.projects[item].language"
                   :label="db.languages?.[lang]?.name || 'ERROR'"
                   class="language mr-1" />
               </div>
-              <div class="flex align-items-start">
+              <div class="flex align-items-start mt-1">
                 <Chip
                   v-for="subj in db.projects[item].subject"
                   :label="db.info.subject[subj][0]"
                   class="subject mr-1" />
               </div>
-              <div class="flex align-items-start">
+              <div class="flex align-items-start mt-1">
                 <Chip v-for="period in db.projects[item].era" :label="db.info.era[period][0]" class="era mr-1" />
               </div>
             </div>
@@ -125,11 +131,11 @@ allKeys.value = Object.keys(db.projects).reverse();
 const updateFacet = () => {
   limit.value = 10;
   matches.value = selection.value?.length ? allKeys.value.filter(x => match(x)).reverse() : allKeys.value;
-  
+
   if (term.value) {
     // console.log(term.value, matches.value.length);
     let pattern = new RegExp(term.value, 'i');
-    matches.value = matches.value.filter(id => pattern.test (db.projects[id].title));
+    matches.value = matches.value.filter(id => pattern.test(db.projects[id].title));
     // console.log('now', matches.value.length);
   }
 };
@@ -138,11 +144,11 @@ const match = (id: any) => {
   const proj = db.projects[id];
 
   if (selection.value?.length) {
-    const condMat = selection.value.filter((x: any) => x.parent === 'material').map((x: any) => x.code);
-    if (condMat.length && !condMat.includes(proj.material)) {
-      return false;
-    }
-    for (let prop of ['era', 'subject', 'language']) {
+    // const condMat = selection.value.filter((x: any) => x.parent === 'material').map((x: any) => x.code);
+    // if (condMat.length && !condMat.includes(proj.material)) {
+    //   return false;
+    // }
+    for (let prop of ['era', 'subject', 'language', 'material']) {
       const condition = selection.value.filter((x: any) => x.parent === prop).map((x: any) => x.code);
       if (condition.length && !condition.some((x: any) => proj[prop].includes(x))) {
         return false;
@@ -162,7 +168,7 @@ const icons = {
 
 onBeforeRouteUpdate(async (to, from) => {
   console.log('update route', from.fullPath, '→', to.fullPath);
-  term.value = to.query.search ? String(to.query.search): '';
+  term.value = to.query.search ? String(to.query.search) : '';
   updateFacet();
   // if (to?.params?.page) {
   //   // console.log('-> update params');
