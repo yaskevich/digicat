@@ -60,6 +60,7 @@ const items = ref([
   {
     label: 'Charts',
     icon: 'pi pi-fw pi-chart-bar',
+    to: '/stats',
     // items: [
     //   {
     //     label: 'Charts',

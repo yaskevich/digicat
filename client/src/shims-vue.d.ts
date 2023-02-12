@@ -23,3 +23,4 @@ declare module 'vue-json-viewer' {
   const def: { install: (app: App) => void };
   export default def;
 }
+declare module "*.png";

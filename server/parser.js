@@ -71,12 +71,12 @@ const info = {
     inscriptions: ['Inscriptions', 'epigraphic documents'],
   },
   era: {
-    ancient: ['Antiquity'],
-    early_ma: ['Early MA'],
-    high_ma: ['High MA'],
-    late_ma: ['Late MA'],
-    early_m: ['Early Modern'],
-    modern: ['Modern'],
+    ancient: ['Antiquity', '', 1],
+    early_ma: ['Early MA', '', 2],
+    high_ma: ['High MA', '', 3],
+    late_ma: ['Late MA', '', 4],
+    early_m: ['Early Modern', '', 5],
+    modern: ['Modern', '', 6],
   },
   subject: {
     history: ['History'],
@@ -89,6 +89,8 @@ const info = {
 };
 
 const projects = {};
+
+const stats = { years: { pubs: {}, activities: {} } };
 
 const addToFacets = (category, leaf, value) => {
   /* eslint-disable-next-line no-param-reassign, no-unused-expressions */
@@ -118,6 +120,27 @@ for (const item of data) {
   const title = item.text.body.bibl.title._text.toString().replace(/[\t\n\s]+/g, ' ').replaceAll(' - ', ' – ').trim();
 
   const edition = item.text.body.bibl.edition._text.toString();
+
+  // firstPubliction (sic!) or relaunch
+  const dates = item.text.body.bibl.date;
+  // console.log(dates, Array.isArray(dates) ? 'array' : typeof dates);
+  const dateList = Array.isArray(dates) ? dates.map((x) => x._attributes.when) : [dates._attributes.when];
+  // console.log(dateList);
+  if (!dateList.length || (dateList.length === 1 && !dateList[0])) {
+    console.warn(id, dates);
+  } else {
+    const pubYear = dateList[0];
+
+    dateList.forEach((year, iter) => {
+      const incr2 = iter ? 1 : 0;
+
+      stats?.years?.activities?.[year] ? stats.years.activities[year] += incr2 : stats.years.activities[year] = incr2;
+      const incr = iter ? 0 : 1;
+      stats?.years?.pubs?.[pubYear] ? stats.years.pubs[pubYear] += incr : stats.years.pubs[pubYear] = incr;
+    });
+
+    obj.dates = dateList.map(Number);
+  }
 
   const description = item.text.body.p._text;
 
@@ -149,19 +172,24 @@ const setLabel = (parent, unit) => {
   if (!res) {
     res = `!!! ${unit}`;
   }
-  return `${res} (${facets[parent][unit].length})`;
+  return res;
 };
 
 const choices = Object.keys(facets).map((x) => ({
   label: x,
-  items: Object.keys(facets[x]).map((y) => ({
-    code: y,
-    parent: x,
-    num: facets[x][y].length,
-    label: setLabel(x, y),
-  })),
+  items: Object.keys(facets[x]).map((y) => {
+    const title = setLabel(x, y);
+    const num = facets[x][y].length;
+    return ({
+      code: y,
+      parent: x,
+      title,
+      num,
+      label: `${title} (${num})`,
+    });
+  }),
 }));
 
 fs.writeFileSync(path.join(dataPath, 'catalog.json'), JSON.stringify({
-  gitlab: repo, languages, projects, facets, choices, info,
+  gitlab: repo, languages, projects, facets, choices, info, stats,
 }, null, 2), 'utf-8');

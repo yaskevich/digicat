@@ -258,6 +258,6 @@ onBeforeMount(async () => {
 
 <style lang="scss">
 .choices {
-  display: flex;
+  display: flex !important;
 }
 </style>
