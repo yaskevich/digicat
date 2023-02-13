@@ -138,17 +138,10 @@ const activeKey = ref<string | null>(null); // vuerouter?.name||'Home'
   font-weight: 500 !important;
 }
 
-#nav {
-  padding: 30px;
-  // text-align: center;
-
-  a {
-    color: #2c3e50;
-
-    &.router-link-exact-active,
-    &.router-link-active {
-      color: #42b983;
-    }
+a {
+  &.router-link-exact-active,
+  &.router-link-active {
+    font-weight: bold;
   }
 }
 

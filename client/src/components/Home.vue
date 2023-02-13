@@ -2,10 +2,10 @@
   <div class="home">
     <div v-if="isLoaded" style="margin: auto">
       <div class="ml-4">
-        <h4>
-          {{ Object.keys(db.projects).length }} items. Updated
-          {{ new Date(db.gitlab.last_activity_at).toLocaleDateString() }}. Project by Patrick Sahle et al.
-        </h4>
+        <!-- <h4>
+          {{ Object.keys(store.db.projects).length }} items. Updated
+          {{ new Date(store.db.gitlab.last_activity_at).toLocaleDateString() }}. Project by Patrick Sahle et al.
+        </h4> -->
         <h4>
           Selected: {{ allKeys.length === matches.length ? allKeys.length : matches.length + ' of ' + allKeys.length }}.
           <span v-if="$route.query.search"> Search term «{{ $route.query.search }}» </span>
@@ -19,7 +19,7 @@
           @change="updateFacet"
           :filter="true"
           display="chip"
-          :options="db.choices"
+          :options="store.db.choices"
           optionLabel="label"
           optionGroupLabel="label"
           optionGroupChildren="items"
@@ -42,17 +42,17 @@
         <Card v-for="item in matches.slice(0, limit)" class="mb-2">
           <!-- <template #header> !!! </template> -->
           <template #title>
-            <a :href="db.projects[item].url" target="_blank" class="pr-1"><i class="pi pi-external-link"></i></a>
-            {{ db.projects[item].title }}
+            <a :href="store.db.projects[item].url" target="_blank" class="pr-1"><i class="pi pi-external-link"></i></a>
+            {{ store.db.projects[item].title }}
           </template>
-          <template #subtitle> {{ db.projects[item].edition }} </template>
+          <template #subtitle> {{ store.db.projects[item].edition }} </template>
 
           <template #content>
-            {{ db.projects[item].description }}
+            {{ store.db.projects[item].description }}
             <div>
               Catalog entry:
-              <a style="text-decoration: none" :href="'https://digitale-edition.de/' + db.projects[item].id"
-                >{{ db.projects[item].id }}
+              <a style="text-decoration: none" :href="'https://digitale-edition.de/' + store.db.projects[item].id"
+                >{{ store.db.projects[item].id }}
               </a>
             </div>
           </template>
@@ -61,25 +61,28 @@
             <div class="flex md:justify-content-start flex-wrap">
               <div class="flex align-items-start mt-1">
                 <Chip
-                  v-for="mat in db.projects[item].material"
-                  :label="db.info.material[mat][0]"
+                  v-for="mat in store.db.projects[item].material"
+                  :label="store.db.info.material[mat][0]"
                   class="material mr-1" />
-                <!-- <Chip :label="db.info.material[db.projects[item].material][0]" class="material mr-2" /> -->
+                <!-- <Chip :label="store.db.info.material[store.db.projects[item].material][0]" class="material mr-2" /> -->
               </div>
               <div class="flex align-items-start mt-1">
                 <Chip
-                  v-for="lang in db.projects[item].language"
-                  :label="db.languages?.[lang]?.name || 'ERROR'"
+                  v-for="lang in store.db.projects[item].language"
+                  :label="store.db.languages?.[lang]?.name || 'ERROR'"
                   class="language mr-1" />
               </div>
               <div class="flex align-items-start mt-1">
                 <Chip
-                  v-for="subj in db.projects[item].subject"
-                  :label="db.info.subject[subj][0]"
+                  v-for="subj in store.db.projects[item].subject"
+                  :label="store.db.info.subject[subj][0]"
                   class="subject mr-1" />
               </div>
               <div class="flex align-items-start mt-1">
-                <Chip v-for="period in db.projects[item].era" :label="db.info.era[period][0]" class="era mr-1" />
+                <Chip v-for="period in store.db.projects[item].era" :label="store.db.info.era[period][0]" class="era mr-1" />
+              </div>
+              <div class="flex align-items-start mt-1">
+                <Chip :label="String(store.db.projects[item].dates?.[0] || '????')" class="year mr-1" />
               </div>
             </div>
           </template>
@@ -95,53 +98,40 @@
 <script setup lang="ts">
 import { ref, reactive, onBeforeMount, onMounted, onUnmounted, unref } from 'vue';
 import { useRoute, onBeforeRouteUpdate } from 'vue-router';
-import axios from 'axios';
 import Chip from 'primevue/chip';
 import Card from 'primevue/card';
 // import VirtualScroller from 'primevue/virtualscroller';
 import MultiSelect from 'primevue/multiselect';
-// import store from '../store';
-import project from '../../package.json';
-import catalog from '../../../server/data/catalog.json';
-// console.log(db);
+import store from '../store';
 const selection = ref([]);
-// const data = reactive({} as keyable);
-// const projects = reactive({} as keyable);
-// const languages = reactive({} as keyable);
-// const choices = reactive([]);
-const db = catalog as keyable;
 const isLoaded = ref(false);
-const gitData = reactive({});
 const scrollComponent = ref(null);
 const vuerouter = useRoute();
 const matches = ref<Array<string>>([]);
 const limit = ref(10);
 const allKeys = ref<Array<string>>([]);
-
 const term = ref('');
-
 ///////////////////////////////////////////////////////////////////
 // static load
-allKeys.value = Object.keys(db.projects).reverse();
+allKeys.value = Object.keys(store.db.projects).reverse();
 // matches.value = allKeys.value;
-
 // static load
 ///////////////////////////////////////////////////////////////////
 
 const updateFacet = () => {
   limit.value = 10;
-  matches.value = selection.value?.length ? allKeys.value.filter(x => match(x)).reverse() : allKeys.value;
+  matches.value = selection.value?.length ? allKeys.value.filter(x => match(x)) : allKeys.value;
 
   if (term.value) {
     // console.log(term.value, matches.value.length);
     let pattern = new RegExp(term.value, 'i');
-    matches.value = matches.value.filter(id => pattern.test(db.projects[id].title));
+    matches.value = matches.value.filter(id => pattern.test(store.db.projects[id].title));
     // console.log('now', matches.value.length);
   }
 };
 
 const match = (id: any) => {
-  const proj = db.projects[id];
+  const proj = store.db.projects[id];
 
   if (selection.value?.length) {
     // const condMat = selection.value.filter((x: any) => x.parent === 'material').map((x: any) => x.code);
