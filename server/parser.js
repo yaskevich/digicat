@@ -89,7 +89,7 @@ const info = {
 };
 
 const projects = {};
-
+const languages = {};
 const stats = { years: { pubs: {}, activities: {} } };
 
 const addToFacets = (category, leaf, value) => {
@@ -109,6 +109,14 @@ for (const item of data) {
       obj[type] = vals;
       for (const val of vals) {
         addToFacets(type, val, id);
+        if (type === 'language') {
+          const res = langs.where('1', val);
+          if (res?.name) {
+            languages[val] = { name: res.name, local: res.local };
+          } else {
+            console.log(id, type, val);
+          }
+        }
       }
     } else if (['material',].includes(type)) {
       // Collected works may contain other material like papers or letters. Single manuscripts may also be multi volume manuscripts or series of manuscripts. Find some more information behind the info buttons on the web page.
@@ -156,8 +164,6 @@ for (const item of data) {
   projects[id] = obj;
 }
 // console.log(info);
-
-const languages = Object.fromEntries(Object.keys(facets.language).map((x) => [x, langs.where('1', x) || 'ERROR!']));
 // console.log(languages);
 
 const setLabel = (parent, unit) => {
