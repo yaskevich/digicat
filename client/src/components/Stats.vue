@@ -30,16 +30,64 @@
       </div>
       <Chart type="bar" :data="matData" :options="genresOptions" />
     </div>
+
+    <div class="card">
+      <h4>Languages</h4>
+      <div class="mb-2">
+        This visualization is rather conventional: the real relation between country and language is not
+        straightforward. But this category represents the highest disproportion (min is {{ langData[0][1] }} and max is
+        {{ langData[langData.length - 1][1] }}), than any other. That's why it's hard to use regular charts to reflect
+        it. Unfortunately, there is no recognizable symbol for a language, so that is what we got.
+      </div>
+      <div>
+        <span v-for="lang in langData" :title="lang[3]">
+          <span v-for="index in lang[1]" style="margin-right: 3px">
+            <country-flag :country="lang[2]" shadow />
+          </span>
+        </span>
+      </div>
+    </div>
   </div>
 </template>
 <script setup lang="ts">
 import { ref, reactive, onBeforeMount, onMounted, onUnmounted, unref } from 'vue';
+import CountryFlag from 'vue-country-flag-next';
 import Chart from 'primevue/chart';
 import store from '../store';
 
 const era = store.db.choices.filter((x: any) => x.label === 'era')?.[0]?.items;
 const material = store.db.choices.filter((x: any) => x.label === 'material')?.[0]?.items;
 const subject = store.db.choices.filter((x: any) => x.label === 'subject')?.[0]?.items;
+const language = store.db.choices.filter((x: any) => x.label === 'language')?.[0]?.items;
+
+const langToCountry = (code: string) => {
+  const mp = {
+    en: 'gb',
+    da: 'dk',
+    he: 'il',
+    zh: 'cn',
+    rm: 'ch',
+    hy: 'am',
+    fa: 'ir',
+    cu: 'un',
+    la: 'va',
+    ga: 'ie',
+    sl: 'si',
+    cy: 'gb-wls',
+    bn: 'in',
+    ca: 'es-ca',
+    sa: 'in',
+    sr: 'rs',
+    sv: 'se',
+    ar: 'sa',
+    ne: 'np',
+  } as keyable;
+  return mp?.[code] ? mp[code] : code;
+};
+
+const langData = language
+  .map((x: any) => [store.db.languages[x.code]?.local || x.code, x.num, langToCountry(x.code), x.label])
+  .sort((a: any, b: any) => a[1] - b[1]);
 
 const eraInfo = Object.keys(era)
   .map((x: any) => [era[x].code, era[x].title, era[x].num, store.db.info.era[era[x].code][2]])
@@ -156,7 +204,7 @@ const subjectOptions = ref({
   plugins: {
     legend: {
       // display: false,
-      position: "left",
+      position: 'left',
       labels: {
         color: '#495057',
       },
